@@ -33,32 +33,44 @@ import java.util.ArrayList;
  */
 public class GameScreen implements Screen {
 
-    private final Stage stage;
+    private final Stage gameStage, scoreStage;
     private final BitmapFont font;
-    private IsometricTiledMapRendererWithSprites mapRenderer;
+    private IsometricTiledMapRendererWithSprites gameMapRenderer;
     private final TiledMap map;
     private final Game game;
     private final SpriteBatch batch;
     private Player player;
+    private TiledMap scoreBoardMap;
+    private IsometricTiledMapRendererWithSprites scoreBoardMapRenderer;
+    OrthographicCamera scoreCamera;
 
     public GameScreen(Game game) {
         this.game = game;
 
         //init
-        stage = new Stage(new ScreenViewport());
+        gameStage = new Stage(new ScreenViewport());
+        scoreStage = new Stage(new ScreenViewport());
+
         font = new BitmapFont();
         batch = new SpriteBatch();
+        scoreCamera = new OrthographicCamera();
 
         //map
         map = new TiledMap();
         makeMap();
         addObjects();
+        makeScoreMap();
 
         //setCamera
-        ((OrthographicCamera) (stage.getViewport().getCamera())).zoom = .25f / .75f;
+        ((OrthographicCamera) (gameStage.getViewport().getCamera())).zoom = .25f / .75f;
         TiledMapTileLayer layer = (TiledMapTileLayer) map.getLayers().get(0);
-        stage.getViewport().getCamera().position.set(layer.getWidth() * layer.getTileWidth() / 2, 0, 0);
-        stage.getViewport().getCamera().update();
+        gameStage.getViewport().getCamera().position.set(layer.getWidth() * layer.getTileWidth() / 2, 0, 0);
+        gameStage.getViewport().getCamera().update();
+
+//       ((OrthographicCamera) (scoreStage.getViewport().getCamera())).zoom = .25f / .75f;
+//        layer = (TiledMapTileLayer) scoreBoardMap.getLayers().get(0);
+//        scoreStage.getViewport().getCamera().position.set(layer.getWidth() * layer.getTileWidth() / 2, 0, 0);
+//        scoreStage.getViewport().getCamera().update();
     }
 
     private void addObjects() {
@@ -66,7 +78,7 @@ public class GameScreen implements Screen {
         player = new Player(1);
         player.setIsoPosition(0, 0);
         actors.add(player);
-        mapRenderer.addActors(actors);
+        gameMapRenderer.addActors(actors);
     }
 
     private void makeMap() {
@@ -86,22 +98,28 @@ public class GameScreen implements Screen {
             }
         }
         layers.add(layer);
-        mapRenderer = new IsometricTiledMapRendererWithSprites(stage, map, 1);
+        gameMapRenderer = new IsometricTiledMapRendererWithSprites(gameStage, map, 1);
     }
 
     @Override
     public void show() {
-        Gdx.input.setInputProcessor(stage);
+        Gdx.input.setInputProcessor(gameStage);
     }
 
     @Override
     public void render(float delta) {
 
-        mapRenderer.setView((OrthographicCamera) stage.getViewport().getCamera());
-        mapRenderer.render();
+        gameMapRenderer.setView((OrthographicCamera) gameStage.getViewport().getCamera());
+        gameMapRenderer.render();
 
-        stage.act(delta);
-        stage.draw();
+        scoreBoardMapRenderer.setView((OrthographicCamera) scoreStage.getViewport().getCamera());
+        scoreBoardMapRenderer.render();
+
+        gameStage.act(delta);
+        gameStage.draw();
+        
+        scoreStage.act();
+        scoreStage.draw();
 
         batch.begin();
         font.draw(batch, "FPS: " + Gdx.graphics.getFramesPerSecond(), 10, Gdx.graphics.getHeight() - 20);
@@ -129,9 +147,10 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
-        stage.dispose();
+        gameStage.dispose();
         map.dispose();
-        mapRenderer.dispose();
+        gameMapRenderer.dispose();
+        scoreBoardMapRenderer.dispose();
     }
 
     private void input() {
@@ -149,21 +168,21 @@ public class GameScreen implements Screen {
         }
 
         if (Gdx.input.isKeyPressed(Input.Keys.G)) {
-            ((OrthographicCamera) (stage.getViewport().getCamera())).zoom /= .99f;
+            ((OrthographicCamera) (scoreStage.getViewport().getCamera())).zoom /= .99f;
         }
         if (Gdx.input.isKeyPressed(Input.Keys.W)) {
-            stage.getViewport().getCamera().position.y++;
+            scoreStage.getViewport().getCamera().position.y++;
         }
         if (Gdx.input.isKeyPressed(Input.Keys.S)) {
-            stage.getViewport().getCamera().position.y--;
+            scoreStage.getViewport().getCamera().position.y--;
         }
         if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-            stage.getViewport().getCamera().position.x--;
+            scoreStage.getViewport().getCamera().position.x--;
         }
         if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-            stage.getViewport().getCamera().position.x++;
+            scoreStage.getViewport().getCamera().position.x++;
         }
-        mapRenderer.setToPosition(player);
+        //scoreBoardMapRenderer.setToPosition(player);
     }
 
     static class Player extends IsometricActor {
@@ -191,4 +210,24 @@ public class GameScreen implements Screen {
         }
 
     }
+
+    private void makeScoreMap() {
+        scoreBoardMap = new TiledMap();
+        scoreBoardMap.getTileSets().addTileSet(Tiles.getInstance().getTileSet());
+
+        MapLayers layers = scoreBoardMap.getLayers();
+        TiledMapTileLayer layer = new TiledMapTileLayer(6, 16, 32, 16);
+        for (int x = 0; x < layer.getWidth(); x++) {
+           
+            for (int y = 0; y < layer.getHeight(); y++) {
+                int id = 0;
+                TiledMapTileLayer.Cell cell = new TiledMapTileLayer.Cell();
+                cell.setTile(scoreBoardMap.getTileSets().getTile(id));
+                layer.setCell(x, y, cell);
+            }
+        }
+        layers.add(layer);
+        scoreBoardMapRenderer = new IsometricTiledMapRendererWithSprites(scoreStage, scoreBoardMap, 1);
+    }
+
 }

@@ -27,6 +27,7 @@ public class Assets extends LevelAssets {
 		addAsset("data/map/letters.png", Texture.class);
 		addAsset("data/objects/playButton.png", Texture.class);
                 addAsset("data/objects/player.png",Texture.class);
+                
 		/*
 		Texture.class
 		Sound.class
